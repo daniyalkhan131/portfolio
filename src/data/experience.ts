@@ -1,7 +1,9 @@
 export const experience = [
   {
     role: "AI Research Engineer",
-    company: "YoyoAI — Bengaluru",
+    company: "YoyoAI",
+    companyUrl: "https://goyoyo.ai",
+    location: "Bengaluru",
     period: "Aug 2024 — Present",
     summary:
       "Extracting customer–salesperson interactions from 8-hour multi-speaker audio captured on wearable devices across retail stores.",
