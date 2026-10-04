@@ -1,0 +1,240 @@
+@import "tailwindcss";
+
+/* Dark mode is driven by a `data-theme` attribute on <html>, not by the OS
+   setting alone, so the header toggle can override the visitor's system
+   preference. The inline script in layout.tsx sets that attribute before the
+   first paint, which is what prevents a flash of the wrong theme. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Light palette. Every colour the site uses is named for its ROLE (canvas,
+   ink, hairline) rather than its hue, so components never hard-code a shade
+   and both themes stay in sync automatically. */
+:root {
+  --canvas: #fdfbf7;
+  --surface: #ffffff;
+  --surface-sunken: #f7f3ec;
+  --ink: #1a1714;
+  --ink-muted: #6b635a;
+  --accent: #b45309;
+  --accent-contrast: #ffffff;
+  --accent-soft: #f6e9d8;
+  --hairline: #e7dfd3;
+  --shadow-card: 0 1px 2px rgb(26 23 20 / 0.04), 0 10px 30px -12px rgb(26 23 20 / 0.12);
+}
+
+/* Dark palette. Only the values change — the names above stay identical, so
+   no component needs a `dark:` variant just to recolour itself. */
+[data-theme="dark"] {
+  --canvas: #141210;
+  --surface: #1c1917;
+  --surface-sunken: #211d1a;
+  --ink: #f5f0e8;
+  --ink-muted: #a8a09a;
+  --accent: #e8a33d;
+  --accent-contrast: #1a1714;
+  --accent-soft: #2a211592;
+  --hairline: #2e2a26;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -12px rgb(0 0 0 / 0.5);
+}
+
+/* Fallback for visitors with JavaScript disabled: the toggle can't run, so
+   honour the OS preference unless they've somehow pinned light. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #141210;
+    --surface: #1c1917;
+    --surface-sunken: #211d1a;
+    --ink: #f5f0e8;
+    --ink-muted: #a8a09a;
+    --accent: #e8a33d;
+    --accent-contrast: #1a1714;
+    --accent-soft: #2a211592;
+    --hairline: #2e2a26;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -12px rgb(0 0 0 / 0.5);
+  }
+}
+
+/* `@theme inline` keeps the var() reference inside each generated utility
+   instead of baking in the literal colour. That indirection is what lets the
+   re-assignments above re-theme the whole site without shipping a second
+   stylesheet. */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-soft: var(--accent-soft);
+  --color-hairline: var(--hairline);
+
+  --shadow-card: var(--shadow-card);
+
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Tells Next 16 to suppress smooth scrolling during route changes, so
+       navigating between pages jumps instantly while in-page anchors glide. */
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--ink);
+  }
+
+  /* Visitors who've asked their OS to reduce motion get no animation at all. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* Long-form article typography. Applied by wrapping rendered MDX in `.prose`.
+   Written by hand rather than pulling in a typography plugin so every value
+   references the same design tokens the rest of the site uses. */
+@layer components {
+  .prose {
+    color: var(--ink);
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  .prose > * + * {
+    margin-top: 1.25em;
+  }
+
+  .prose h2 {
+    font-family: var(--font-fraunces), Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin-top: 2.5em;
+    padding-top: 1.5em;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .prose h3 {
+    font-family: var(--font-fraunces), Georgia, serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-top: 2em;
+  }
+
+  .prose p,
+  .prose li {
+    color: var(--ink-muted);
+  }
+
+  .prose strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .prose a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .prose ul,
+  .prose ol {
+    padding-left: 1.3em;
+  }
+
+  .prose ul {
+    list-style: disc;
+  }
+
+  .prose ol {
+    list-style: decimal;
+  }
+
+  .prose li + li {
+    margin-top: 0.5em;
+  }
+
+  .prose blockquote {
+    border-left: 2px solid var(--accent);
+    padding-left: 1em;
+    font-style: italic;
+  }
+
+  /* Inline code */
+  .prose :not(pre) > code {
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.875em;
+    background-color: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: 0.3em;
+    padding: 0.15em 0.4em;
+  }
+
+  .prose pre {
+    background-color: var(--surface-sunken);
+    border: 1px solid var(--hairline);
+    border-radius: 0.75rem;
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  /* Shiki emits both palettes at once; pick the one matching the active theme. */
+  .prose pre code span {
+    color: var(--shiki-light);
+  }
+
+  [data-theme="dark"] .prose pre code span {
+    color: var(--shiki-dark);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .prose pre code span {
+      color: var(--shiki-dark);
+    }
+  }
+
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .prose th,
+  .prose td {
+    border: 1px solid var(--hairline);
+    padding: 0.55em 0.8em;
+    text-align: left;
+  }
+
+  .prose th {
+    background-color: var(--surface-sunken);
+    font-weight: 600;
+  }
+}

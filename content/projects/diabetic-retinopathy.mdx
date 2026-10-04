@@ -1,0 +1,84 @@
+---
+title: Diabetic Retinopathy Diagnosis with Interpretable CNNs
+summary: Screening retinal images for diabetic retinopathy severity, with visual explanations a clinician can actually audit.
+stack: ["Python", "TensorFlow", "InceptionV3", "Grad-CAM", "LIME", "OpenCV"]
+metrics:
+  - label: Quadratic Kappa
+    value: "0.82"
+  - label: Severity Classes
+    value: "5"
+  - label: Explainability
+    value: "Grad-CAM + LIME"
+role: Solo project
+timeframe: "2023"
+github: https://github.com/daniyalkhan131
+featured: true
+order: 1
+---
+
+{/* TODO(daniyal): confirm the dataset name, image counts and the training-set
+    size below — I inferred APTOS 2019 from the quadratic-kappa metric. Replace
+    the GitHub URL with the actual repo. */}
+
+## Problem
+
+Diabetic retinopathy is the leading cause of preventable blindness in working-age adults, and it is diagnosed by grading retinal fundus photographs on a five-point severity scale. Grading is slow, requires a trained ophthalmologist, and suffers from meaningful inter-rater disagreement.
+
+An automated grader is only useful in a clinical setting if it can show *why* it reached a grade. A black-box model that outputs "severity 3" is not something a clinician can sign their name under. So the goal was two-fold: match expert-level agreement, and make every prediction inspectable.
+
+## Data
+
+The dataset is retinal fundus photography labelled across five severity grades, from *no retinopathy* through *proliferative*. Two properties dominated every design decision:
+
+- **Severe class imbalance.** The healthy class vastly outnumbers the proliferative class, so raw accuracy is a meaningless target — a model that predicts "healthy" always would score well and be clinically worthless.
+- **Wildly inconsistent capture conditions.** Images came from different cameras, at different resolutions, under different lighting, with varying degrees of over- and under-exposure.
+
+## Approach
+
+### Preprocessing
+
+The capture inconsistency was the first thing to fix, since no amount of model capacity compensates for images where the lesions are invisible.
+
+- **Resizing and normalisation** to a fixed input resolution.
+- **CLAHE** (Contrast Limited Adaptive Histogram Equalisation) applied to the green channel, where retinal vasculature and haemorrhages have the strongest contrast. Unlike global histogram equalisation, CLAHE operates on local tiles and clips the contrast limit, so it lifts faint lesions without blowing out already-bright regions.
+- **Gaussian filtering** to suppress high-frequency sensor noise that augmentation would otherwise amplify into spurious texture.
+
+### Augmentation
+
+Retinal images have no canonical orientation — a fundus photograph is equally valid flipped or rotated — so geometric augmentation is label-preserving here in a way it would not be for, say, text. Rotation, flipping and zoom were applied to expand effective training size and push the model toward lesion morphology rather than position.
+
+### Model
+
+Rather than training from scratch on a dataset this size, I used **transfer learning from InceptionV3** pretrained on ImageNet. Inception's factorised convolutions and multi-scale filter banks suit this problem well: retinopathy markers range from microaneurysms a few pixels across to large haemorrhages, and the parallel filter sizes within each Inception block capture both without forcing a single receptive-field choice.
+
+The convolutional base was frozen initially, then progressively unfrozen for fine-tuning once the classification head had stabilised — unfreezing early would have let large, noisy gradients destroy the pretrained features.
+
+### Evaluation metric
+
+The scoring metric is **quadratic weighted kappa**, not accuracy, and that choice matters. Severity grades are ordinal: predicting grade 4 when the truth is grade 0 is a far worse error than predicting grade 1. Quadratic kappa penalises disagreement by the *square* of the grade distance, and corrects for agreement that would occur by chance. It is the metric that matches the clinical cost of being wrong.
+
+## Experiments
+
+Hyperparameter tuning covered learning-rate schedules, the depth at which to unfreeze the base network, batch size, and augmentation strength. The two findings that moved the needle most:
+
+1. **CLAHE on the green channel** produced a larger improvement than any architectural change. Preprocessing beat model capacity.
+2. **Unfreezing too early** consistently degraded results, confirming the staged fine-tuning schedule.
+
+## Results
+
+The final model reached a **quadratic weighted kappa of 0.82**, putting it in line with published state-of-the-art results on this task and within the range of inter-grader agreement between human ophthalmologists.
+
+## Interpretability
+
+A score alone was never the deliverable. Two complementary techniques were layered on:
+
+- **Grad-CAM** uses the gradients flowing into the final convolutional layer to produce a coarse heatmap of which spatial regions drove the predicted class. It answers *where in this image did the model look?* — and in the healthy cases it correctly concentrated on the macula and optic disc, while in severe cases it lit up haemorrhage clusters.
+- **LIME** takes a different angle: it perturbs the input by occluding superpixel segments and observes how the prediction shifts, fitting a simple local surrogate model. Where Grad-CAM is gradient-based and architecture-aware, LIME is model-agnostic and perturbation-based, so agreement between the two is meaningful evidence rather than two views of the same artifact.
+
+Cases where the two disagreed were the most useful ones — they consistently flagged images where the model was keying on a capture artifact rather than pathology.
+
+## What I learned
+
+- **The metric is a modelling decision.** Switching the target from accuracy to quadratic kappa changed which experiments looked successful, and would have changed which model I shipped.
+- **Preprocessing outranked architecture.** The CLAHE step delivered more than swapping backbones did. Domain-specific image handling is underrated relative to model selection.
+- **Interpretability is a debugging tool, not just a compliance checkbox.** Grad-CAM surfaced failure modes — artifact-keying — that the aggregate score completely hid.

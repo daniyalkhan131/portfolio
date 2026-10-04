@@ -1,0 +1,45 @@
+---
+title: DVC and MLflow Solve Different Problems
+description: They get mentioned in the same breath and do almost nothing alike. A short note on which one to reach for.
+pubDate: 2026-09-29
+tags: ["mlops", "tooling"]
+---
+
+{/* PLACEHOLDER POST — written as sample content so the blog layout is testable.
+    Daniyal: rewrite or delete. */}
+
+Every MLOps listicle names both, usually in the same bullet. They address genuinely different failures.
+
+## DVC answers: what data produced this?
+
+Git is excellent for code and bad for a 4 GB parquet file. DVC keeps a small pointer file in Git while the real artifact lives in remote storage.
+
+```bash
+dvc add data/raw/train.parquet
+git add data/raw/train.parquet.dvc
+```
+
+Checking out an old commit now retrieves the exact dataset that commit was trained against. Without it, "reproduce last month's result" is a request you cannot honour.
+
+It also defines the pipeline as a DAG, so changing the cleaning stage re-runs everything downstream and nothing upstream.
+
+## MLflow answers: which run was that?
+
+MLflow logs parameters, metrics and artifacts per run.
+
+```python
+with mlflow.start_run():
+    mlflow.log_param("learning_rate", 3e-4)
+    mlflow.log_metric("val_kappa", 0.82)
+```
+
+The value is not visible on day one. It shows up three weeks later when you need the hyperparameters behind one good number, and the alternative is scrolling shell history.
+
+## The split
+
+| Question | Tool |
+| --- | --- |
+| Which data and code made this model? | DVC |
+| Which settings produced this score? | MLflow |
+
+They overlap slightly and complement each other more than they compete.

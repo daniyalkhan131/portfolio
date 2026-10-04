@@ -1,0 +1,45 @@
+---
+title: "Weekly Note: Concatenation Can't Express Sarcasm"
+description: Why gluing two feature vectors together limits what a multimodal model can represent, and what the outer product buys you.
+pubDate: 2026-10-02
+tags: ["weekly", "multimodal"]
+---
+
+{/* PLACEHOLDER POST — written as sample content so the blog layout is testable.
+    Daniyal: rewrite or delete. */}
+
+Spent this week on the fusion step of the multimodal sentiment model, and hit something that reframed the whole problem.
+
+## The setup
+
+Two encoders, one over text, one over audio. Both produce a feature vector. Now combine them.
+
+The obvious move is concatenation:
+
+```python
+fused = torch.cat([text_features, audio_features], dim=-1)
+output = classifier(fused)
+```
+
+## Why that's limiting
+
+A dense layer over a concatenated vector learns a **weighted sum** of the two. Its output is *contribution from text* plus *contribution from audio*.
+
+But the thing I actually need the model to represent is: "these words mean the opposite when delivered in this tone." That is not additive. It's a product — the audio signal *modulates* what the text signal means.
+
+## Tensor fusion
+
+Take the outer product instead:
+
+```python
+# n-dim text, m-dim audio -> (n x m) matrix of pairwise products
+fused = torch.einsum("bi,bj->bij", text_features, audio_features)
+```
+
+Concatenating an *n*-dim and an *m*-dim vector gives you *n + m* features. The outer product gives you *n × m*, where every entry is one text feature times one audio feature. The cross-modal interactions are represented explicitly rather than hoped for.
+
+The cost is obvious in that shape: dimensionality explodes multiplicatively, so the component encoders have to stay disciplined.
+
+## Next
+
+Measuring whether the extra parameters earn their keep against a concatenation baseline. Suspect the gain shows up specifically on sarcastic samples and barely anywhere else — which would be the interesting result.

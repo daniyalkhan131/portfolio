@@ -39,3 +39,5 @@ This is the top priority for this project. Code can be complex when the problem 
 ---
 
 **Signal this is working:** diffs stay small and scoped, comments/docs actually explain the non-obvious parts, and questions come before implementation rather than after a wrong guess.
+
+@AGENTS.md

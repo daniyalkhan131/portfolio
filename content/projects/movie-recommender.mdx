@@ -1,0 +1,78 @@
+---
+title: Hybrid Movie Recommender with a Tracked MLOps Pipeline
+summary: A content-plus-collaborative recommender built as a reproducible, versioned pipeline rather than a notebook.
+stack: ["Python", "scikit-learn", "DVC", "MLflow", "Docker", "FastAPI", "AWS EC2"]
+metrics:
+  - label: Approach
+    value: "Hybrid"
+  - label: Pipeline
+    value: "DVC + MLflow"
+  - label: Deployment
+    value: "AWS EC2"
+role: Solo project
+timeframe: "2023"
+github: https://github.com/daniyalkhan131
+featured: true
+order: 2
+---
+
+{/* TODO(daniyal): add the real catalogue size, the offline evaluation numbers
+    (precision@k / recall@k) and the actual repo URL. The architecture and
+    tooling below are accurate; the figures are placeholders. */}
+
+## Problem
+
+Recommenders fail in two well-known ways, and each failure has the opposite cause.
+
+**Collaborative filtering** learns from user–item interaction patterns. It finds genuinely surprising recommendations — people who liked this also liked that — but it collapses on cold start. A film nobody has rated yet is invisible to it, and so is a brand-new user.
+
+**Content-based filtering** learns from item attributes: genre, cast, crew, plot keywords. It handles cold start fine, because a new film still has metadata. But it is relentlessly narrow — watch one heist movie and it will recommend heist movies until the end of time.
+
+The goal was a system that uses each to cover the other's blind spot, built so that every result was reproducible rather than a one-off notebook run.
+
+## Data
+
+Data came from two sources that had to be reconciled:
+
+- **The IMDb API**, for structured metadata — titles, genres, cast, crew, ratings.
+- **Web scraping**, for the fields the API did not expose.
+
+The merge was the hard part. The two sources disagreed on title spellings, release years for films with staggered international releases, and cast credit ordering. Cleaning covered deduplication, title normalisation, resolving year conflicts, and imputing missing genre and crew fields.
+
+## Approach
+
+### Content-based component
+
+Item metadata was turned into a feature vector per film — genres, key cast and crew, and plot keywords — and similarity computed with cosine distance. Cosine rather than Euclidean because these vectors are sparse and high-dimensional, where raw magnitude mostly encodes *how much metadata a film has* rather than anything about the film itself. Cosine measures the angle between vectors and ignores that magnitude, so a sparsely-documented film is not penalised for being sparsely documented.
+
+### Collaborative component
+
+User–item interactions were factorised to surface latent preference structure — the recurring patterns that do not map onto any metadata field the content model can see.
+
+### Combining them
+
+The two signals were blended, with the weighting shifted toward content-based scoring when interaction history is thin and toward collaborative scoring as it accumulates. This is what makes cold start degrade gracefully instead of failing outright.
+
+## Engineering
+
+This is the part of the project I care most about, and the reason it exists as more than a notebook.
+
+### Versioning with DVC
+
+Git handles code; it handles multi-gigabyte datasets and model binaries badly. **DVC** stores pointer files in Git while the actual artifacts live in remote storage, so `git checkout` of an old commit retrieves the exact dataset and model that commit was trained against. Without it, "reproduce last month's results" is a request that cannot be honoured.
+
+The pipeline is defined as a DAG of stages — ingest, clean, featurise, train, evaluate — each declaring its dependencies and outputs. Changing the cleaning step re-runs everything downstream of it and nothing upstream, so iteration stays cheap.
+
+### Experiment tracking with MLflow
+
+Every run logged its parameters, metrics and artifacts to **MLflow**. The value shows up weeks later, when you need to answer "which hyperparameters produced that good run?" — a question that is trivial with tracking and nearly impossible from shell history.
+
+### Serving and deployment
+
+The model was wrapped in a **FastAPI** service, containerised with **Docker**, and deployed to **AWS EC2**. FastAPI's Pydantic request models mean a malformed request is rejected at the boundary with a clear error, rather than surfacing as a confusing tensor-shape exception deeper in the stack. Docker meant the environment that ran locally was the environment that ran in production — the single most common source of "works on my machine" deployment failures.
+
+## What I learned
+
+- **Reproducibility is infrastructure, not discipline.** I could not have reliably reproduced results from willpower alone; DVC and MLflow made it the default rather than a chore.
+- **Hybrid systems are about failure modes, not accuracy.** The hybrid did not win because it scored higher on average — it won because it had no catastrophic cold-start hole.
+- **Data cleaning dominated the schedule.** Reconciling two inconsistent sources took longer than modelling, which is the normal ratio and still surprises me every time.

@@ -1,0 +1,69 @@
+---
+title: Multimodal Sentiment Analysis with Tensor Fusion
+summary: Reading sentiment from speech and text together, because tone routinely contradicts the words.
+stack: ["Python", "PyTorch", "Transformers", "Librosa", "melSpectrogram"]
+metrics:
+  - label: Modalities
+    value: "Audio + Text"
+  - label: Fusion
+    value: "Tensor Fusion"
+  - label: Architecture
+    value: "Transformer"
+role: Solo project
+timeframe: "2024"
+github: https://github.com/daniyalkhan131
+featured: true
+order: 3
+---
+
+{/* TODO(daniyal): add the dataset name (CMU-MOSI? MOSEI?), final accuracy / F1
+    numbers, and the real repo URL. The architecture description is accurate. */}
+
+## Problem
+
+Text-only sentiment analysis has a structural blind spot: it cannot hear tone. "Oh, that's just wonderful" is positive on the page and frequently the opposite out loud. Sarcasm, hesitation, and emphasis live in prosody — pitch contour, energy, timing — and are simply absent from the transcript.
+
+The goal was a model that reads both the words and the way they were said, and crucially one where the two modalities *interact* rather than being averaged together at the end.
+
+## Data
+
+Paired audio and transcript samples labelled for sentiment. The dominant challenge is that the two modalities live on completely incompatible footings:
+
+- **Text** is discrete, short, and already carries rich pretrained semantics.
+- **Audio** is continuous, long, high-dimensional, and has no equivalent off-the-shelf semantic grounding.
+
+Any architecture has to reconcile that mismatch before it can fuse anything.
+
+## Approach
+
+### Text representation
+
+Pretrained embeddings handle the text side. Training text semantics from scratch on a dataset this size would be wasteful when pretrained language models already encode far more about word meaning than this corpus could teach.
+
+### Audio representation
+
+Raw audio waveforms are far too long and too low-level to feed a transformer directly — tens of thousands of samples per second, with sentiment information distributed across the whole span.
+
+Instead, audio is converted to a **mel spectrogram**. A standard spectrogram applies a short-time Fourier transform to produce frequency content over time; the *mel* variant then re-bins those frequencies onto the mel scale, which is spaced according to human pitch perception rather than linear hertz. That matters because human hearing discriminates far more finely at low frequencies than high ones — the perceptual gap between 200 and 300 Hz is much larger than between 8000 and 8100 Hz. The mel scale compresses the high end where we hear poorly and preserves resolution where we hear well, which concentrates the representation on exactly the variation that carries emotional content.
+
+The result is a compact 2-D time–frequency image that a neural network can consume the way it would consume any other image.
+
+### Encoder
+
+A **transformer encoder** extracts features from both streams. Self-attention is the right tool here because sentiment cues are non-local: a sarcastic pitch rise at the end of an utterance reframes words spoken several seconds earlier. Recurrent architectures have to carry that signal step by step through a bottleneck; attention connects the two positions directly, in one hop, regardless of distance.
+
+### Fusion
+
+The decoder performs **tensor fusion**, and this is the core design decision.
+
+Naive fusion concatenates the two feature vectors and lets a dense layer sort it out. The problem is that concatenation only ever lets the network learn *additive* combinations — the contribution of audio and the contribution of text, summed. It cannot natively represent "this text means the opposite when said in this tone," because that is a multiplicative interaction, not an additive one.
+
+Tensor fusion instead takes the **outer product** of the modality feature vectors. Where concatenation of an *n*-dimensional and an *m*-dimensional vector yields *n + m* features, the outer product yields an *n × m* matrix in which every entry is the product of one text feature and one audio feature. Those cross terms are exactly the bimodal interactions, represented explicitly rather than hoped for.
+
+The cost is dimensionality: the fused representation grows multiplicatively, which is the central trade-off of the method and the reason the component feature dimensions have to be kept disciplined.
+
+## What I learned
+
+- **Fusion strategy mattered more than encoder capacity.** Moving from concatenation to tensor fusion changed what the model could express at all, which no amount of extra layers on a concatenated representation would have fixed.
+- **Representation choice is where domain knowledge pays.** The mel scale encodes a fact about human perception. Picking it over a linear spectrogram was a modelling decision disguised as a preprocessing one.
+- **Modality imbalance is real.** Pretrained text embeddings start far ahead of anything the audio branch can learn from scratch, and without care the model leans on text and treats audio as a rounding error.

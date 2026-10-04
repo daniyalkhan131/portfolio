@@ -1,0 +1,35 @@
+---
+title: Accuracy Is Usually the Wrong Target
+description: On ordinal labels, imbalanced classes, and why the metric you optimise is a modelling decision rather than a reporting one.
+pubDate: 2026-09-18
+tags: ["evaluation", "metrics"]
+---
+
+{/* PLACEHOLDER POST — written as sample content so the blog layout is testable.
+    Daniyal: rewrite or delete. */}
+
+Most of the harm I've done to my own projects came from optimising a metric that did not match the cost of being wrong.
+
+## Accuracy hides imbalance
+
+If 85% of your labels are the negative class, a model that always predicts negative scores 85%. That is a useless model with a respectable-looking number attached, and it will sail through review if accuracy is the headline.
+
+```python
+# A model that has learned nothing at all.
+def predict(x):
+    return 0
+
+# ...still scores 85% on an 85/15 split.
+```
+
+## Not all errors cost the same
+
+This is the part that changed how I work. When labels are **ordinal** — severity grades, star ratings, risk tiers — the distance between prediction and truth matters.
+
+Predicting grade 1 when the truth is grade 0 is a small error. Predicting grade 4 when the truth is grade 0 could mean someone is sent for urgent treatment they don't need, or reassured when they shouldn't be.
+
+**Quadratic weighted kappa** handles this directly: it penalises disagreement by the square of the grade distance, and corrects for the agreement you'd get by chance. Switching to it on my retinopathy project changed which experiments looked like wins.
+
+## The practical rule
+
+Write down the cost of each kind of error *before* you pick a metric. If a false positive and a false negative cost the same, accuracy might genuinely be fine. They rarely cost the same.
