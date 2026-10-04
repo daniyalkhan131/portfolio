@@ -30,7 +30,7 @@ export const pipelineStages: PipelineStage[] = [
     detail:
       "Class balance, capture conditions, label quality, leakage. Most of the surprises that would have derailed a model later are visible here if you actually open the files instead of trusting a summary table.",
     tools: ["pandas", "EDA", "DVC"],
-    seenIn: { label: "Movie Recommender", slug: "movie-recommender" },
+    seenIn: { label: "Voice Fingerprinting Pipeline", slug: "voice-fingerprinting-pipeline" },
   },
   {
     id: "baseline",
@@ -38,7 +38,7 @@ export const pipelineStages: PipelineStage[] = [
     principle: "Ship the dumbest thing that works, then try to beat it.",
     detail:
       "Logistic regression before transformers. A baseline tells you whether the problem is even learnable, gives every later experiment something to be measured against, and occasionally turns out to be good enough that the complicated version is never needed.",
-    tools: ["scikit-learn", "MLflow"],
+    tools: ["scikit-learn", "DVC"],
   },
   {
     id: "experiment",
@@ -46,7 +46,7 @@ export const pipelineStages: PipelineStage[] = [
     principle: "Change one thing at a time, and log every run.",
     detail:
       "Untracked experiments are experiments you will re-run. Logging parameters, metrics and artifacts costs minutes up front and saves the week where you try to recover which configuration produced the one good number.",
-    tools: ["MLflow", "DVC pipelines"],
+    tools: ["ClearML", "Weights & Biases", "DVC"],
     seenIn: { label: "Diabetic Retinopathy", slug: "diabetic-retinopathy" },
   },
   {
@@ -64,8 +64,8 @@ export const pipelineStages: PipelineStage[] = [
     principle: "The environment that ran locally has to be the one that runs in production.",
     detail:
       "Containerise it, validate requests at the boundary with typed schemas, and keep the serving path thin. Most deployment failures are environment drift, not model quality.",
-    tools: ["Docker", "FastAPI", "Pydantic", "AWS EC2"],
-    seenIn: { label: "Movie Recommender", slug: "movie-recommender" },
+    tools: ["Docker", "Kubernetes", "FastAPI", "BentoML", "AWS"],
+    seenIn: { label: "Voice Fingerprinting Pipeline", slug: "voice-fingerprinting-pipeline" },
   },
   {
     id: "monitor",
@@ -73,6 +73,7 @@ export const pipelineStages: PipelineStage[] = [
     principle: "A model that was right at deploy time is not a model that stays right.",
     detail:
       "Input distributions drift, upstream pipelines change shape, and performance decays quietly. Track prediction distributions and input statistics so degradation surfaces as an alert rather than as a complaint.",
-    tools: ["Prometheus", "Drift detection"],
+    tools: ["Drift detection", "ClearML", "Weights & Biases"],
+    seenIn: { label: "Event Detection Pipeline", slug: "event-detection-pipeline" },
   },
 ];

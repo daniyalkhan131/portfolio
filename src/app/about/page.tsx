@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { PageHeader } from "@/components/site/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { achievements, certificates, education } from "@/data/experience";
+import { achievements, education } from "@/data/experience";
 import { site } from "@/lib/site";
 import aboutPic from "@/assets/about-pic.png";
 
@@ -24,23 +24,30 @@ export default function AboutPage() {
           className="size-40 shrink-0 rounded-2xl border border-hairline object-cover shadow-card"
         />
 
-        {/* PLACEHOLDER BIO — Daniyal, rewrite this in your own voice. */}
         <div className="prose">
           <p>
-            I&apos;m a machine learning engineer. Most of my work sits in the gap between a model
-            that performs well in a notebook and a system that keeps performing once real data
-            is flowing through it.
+            I&apos;m an AI research engineer at a stealth-stage startup in Bengaluru, working on
+            speech processing, NLP and generative AI. Most of what I do sits in the gap between a
+            model that performs well on a benchmark and a system that keeps performing once real,
+            messy data is flowing through it at scale.
+          </p>
+          <p>
+            Day to day that means eight-hour recordings from retail shop floors: finding the
+            customer conversations buried inside them, separating speakers who were never
+            enrolled, and deciding where one interaction ends and the next begins. The work has
+            gone from research prototype to a deployed product running across more than 2,000
+            stores.
           </p>
           <p>
             I came to this through a Master&apos;s in Computer Science, where I spent most of my
-            time on deep learning and interpretability — particularly the question of how you
-            justify a model&apos;s output to someone who has to act on it. That interest has
-            stuck. I care a lot about evaluation design, reproducible pipelines, and knowing
-            what a system does when it fails rather than only when it works.
+            time on deep learning and interpretability — how you justify a model&apos;s output to
+            someone who has to act on it. That interest stuck. I care about evaluation design,
+            reproducible pipelines, and knowing what a system does when it fails rather than only
+            when it works.
           </p>
           <p>
-            Outside of building, I write up what I learn — partly to think it through properly,
-            partly because the explanation I wish I&apos;d found usually didn&apos;t exist.
+            I write up what I learn here, partly to think it through properly and partly because
+            the explanation I wanted usually didn&apos;t exist.
           </p>
         </div>
       </div>
@@ -62,16 +69,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="mt-12">
-        <h2 className="font-display text-xl font-semibold text-ink">Certifications</h2>
-        <ul className="mt-4 space-y-2">
-          {certificates.map((item) => (
-            <li key={item} className="text-sm leading-relaxed text-ink-muted">
-              {item}
-            </li>
-          ))}
-        </ul>
-      </section>
 
       <section className="mt-12">
         <h2 className="font-display text-xl font-semibold text-ink">Achievements</h2>

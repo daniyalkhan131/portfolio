@@ -1,16 +1,15 @@
-/**
- * PLACEHOLDER — Daniyal, replace the role entry below with your actual job.
- * Education and achievements are real, taken from the resume PDF.
- */
 export const experience = [
   {
-    role: "Machine Learning Engineer",
-    company: "Company Name",
-    period: "2024 — Present",
+    role: "AI Research Engineer",
+    company: "Yoyo (Stealth Startup) — Bengaluru",
+    period: "Aug 2024 — Present",
+    summary:
+      "Extracting customer–salesperson interactions from 8-hour multi-speaker audio captured on wearable devices across retail stores.",
     bullets: [
-      "Placeholder: describe a system you built and the impact it had, with a number if you can share one.",
-      "Placeholder: describe a pipeline or model you took to production, and the scale it handles.",
-      "Placeholder: describe something you improved — latency, cost, accuracy — and by how much.",
+      "Built a voice fingerprinting pipeline — denoising, VAD, speaker diarization, embedding generation and custom clustering — with Qdrant-backed retrieval for cross-session speaker tracking.",
+      "Designed a RAG-style event detection pipeline using HyDE multi-query prompting and RAPTOR-inspired clustering, lifting customer coverage by 59% and cutting personal speech by 66%.",
+      "Combined both pipelines with LLM-based filtering to reach 89% precision and 73% recall on production audio.",
+      "Scaled the system across 100,000+ hours of audio and from 2 to 8 clients covering 2,000+ retail stores in India, taking it from research prototype to deployed product.",
     ],
   },
 ] as const;
@@ -20,23 +19,8 @@ export const education = [
     degree: "M.Tech, Computer Science & Engineering",
     institution: "Jamia Millia Islamia",
     period: "2022 — 2024",
-    note: "9.29 SGPA",
-  },
-  {
-    degree: "B.Tech, Computer Science & Engineering",
-    institution: "Galgotias University",
-    period: "2017 — 2021",
-    note: "8.16 CGPA",
+    note: "9.22 CGPA",
   },
 ] as const;
 
-export const achievements = [
-  "GATE qualified — 97.33 percentile",
-  "2nd place, technical quiz by Google Developer Students Club",
-] as const;
-
-export const certificates = [
-  "Deep Learning Specialization — DeepLearning.AI / Stanford (Coursera)",
-  "Advanced Learning Algorithms — DeepLearning.AI / Stanford (Coursera)",
-  "Supervised Machine Learning: Regression and Classification — DeepLearning.AI / Stanford",
-] as const;
+export const achievements = ["GATE qualified — 97.33 percentile"] as const;

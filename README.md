@@ -174,19 +174,18 @@ reduced motion is requested, rather than animating faster.
 
 ## Placeholder content to replace
 
-Search the repo for `TODO(daniyal)`, `PLACEHOLDER` and `Company Name`.
+Content was refreshed from the 2025 resume, so role, experience, skills,
+education and the two Yoyo case studies are real. What's still filler:
 
 | What | Where |
 | --- | --- |
-| Hero tagline (currently my draft) | `src/lib/site.ts` |
-| Current job — company, dates, impact bullets | `src/data/experience.ts` |
-| GitHub repo URLs for all three projects | frontmatter in `content/projects/*.mdx` |
-| Dataset names and result figures | MDX comments at the top of each case study |
-| About-page bio | `src/app/about/page.tsx` |
-| Sample blog posts (all three are filler) | `content/notes/*.mdx` |
-| Domain | `src/lib/site.ts` → `site.url` |
+| GitHub repo URLs — all three personal projects point at the profile root | frontmatter in `content/projects/{diabetic-retinopathy,multimodal-sentiment,movie-recommender}.mdx` |
+| Dataset names and result figures for the personal projects | `TODO(daniyal)` comments at the top of those three files |
+| All three blog posts are sample content | `content/notes/*.mdx` |
+| Domain (`site.url`) is a guess | `src/lib/site.ts` |
+| Hero tagline — derived from the resume profile, worth a read-through | `src/lib/site.ts` |
 
----
+Not yet built: favicon, OG image, `robots.txt`, custom 404 page.
 
 ## Deployment
 

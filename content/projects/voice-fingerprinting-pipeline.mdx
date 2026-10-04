@@ -1,0 +1,81 @@
+---
+title: Voice Fingerprinting Pipeline
+summary: Isolating individual customer conversations inside eight-hour, multi-speaker audio recorded on wearables across retail stores.
+stack: ["Python", "PyTorch", "Silero VAD", "Pyannote", "ReDimNet", "Qdrant", "Resemble AI"]
+metrics:
+  - label: Precision
+    value: "~60%"
+  - label: Recall
+    value: "~49%"
+  - label: Audio Processed
+    value: "100k+ hrs"
+role: AI Research Engineer, Yoyo
+timeframe: "2024 — Present"
+featured: true
+order: 1
+---
+
+## Problem
+
+Salespeople in retail stores wear recording devices through an eight-hour shift. Somewhere inside that continuous audio are the moments that actually matter — the conversations with customers. Everything else is ambient store noise, colleagues talking, phone calls, and long stretches of nothing.
+
+The task is to find those customer interactions and separate them cleanly, with no prior knowledge of how many people appear in a given recording or who any of them are. The constraints that shaped every decision:
+
+- **Unknown, variable speaker count.** A shift might contain three customers or forty. Nothing can assume a fixed number.
+- **A genuinely hostile acoustic environment.** Retail floors have HVAC, background music, crowd noise, and conversations happening two metres away that are not the conversation of interest.
+- **One recurring speaker, many one-off speakers.** The salesperson appears in every recording, every day. Each customer appears once, briefly. These two cases need completely different handling.
+- **Conversations fragment.** People pause, walk away, come back. A single interaction is rarely one contiguous block of audio.
+
+## Architecture
+
+The pipeline is a chain of stages, each narrowing the problem for the next.
+
+### Denoising
+
+Audio is denoised first, using Resemble AI. The ordering matters: voice activity detection is trained predominantly on clean speech, and feeding it raw retail-floor audio produces false triggers on music and machinery. Cleaning first means every downstream stage operates on a signal closer to what its training distribution assumed.
+
+### Voice activity detection
+
+**Silero VAD** marks which regions contain speech at all. This is the single largest reduction in the problem: most of an eight-hour shift is not speech, and discarding it early means the expensive stages downstream only ever see candidate audio. VAD is cheap; diarization and embedding generation are not.
+
+### Speaker diarization
+
+**Pyannote** answers *who spoke when* — partitioning speech regions by speaker identity without knowing in advance who those speakers are or how many there will be. This is what turns an undifferentiated wall of speech into labelled turns.
+
+### Speaker embeddings
+
+Each speech segment is converted into a fixed-dimension vector using **ReDimNet**. These embeddings are trained so that segments from the same speaker land close together in vector space and segments from different speakers land far apart, regardless of what words were actually said. That property is what makes identity comparable across time without any transcription.
+
+### Clustering with statistical refinement
+
+Embeddings are then clustered into speaker identities. Off-the-shelf clustering underperforms here because segment quality varies enormously — a three-second turn captured across a noisy aisle produces a far less reliable embedding than a thirty-second one at close range. The clustering layer applies statistical refinements that account for that variance rather than treating every embedding as equally trustworthy.
+
+### Cross-session tracking with Qdrant
+
+Voice fingerprints are stored and retrieved through **Qdrant**, a vector database. This is what makes identity persist across recordings: the salesperson identified on Monday needs to resolve to the same identity on Tuesday, without re-deriving them from scratch each time. Retrieval here was a meaningful optimisation target, since fingerprint lookups happen constantly across a growing index.
+
+## Recovering fragmented conversations
+
+The stages above produce clean speaker-labelled segments. They do not produce *conversations* — and the gap between those two things turned out to be where most of the remaining accuracy lived. Four refinements addressed it:
+
+- **Greeting detection.** Customer interactions reliably open with a greeting. Detecting that opening recovers the true start of a conversation whose first moments would otherwise be discarded as isolated chatter.
+- **Voice stitching.** A single interaction interrupted by a pause, a passing announcement, or a moment of silence arrives as several disconnected fragments. Stitching rejoins fragments belonging to the same exchange.
+- **Lower-level clustering.** A finer clustering pass catches short turns — the one-word confirmations and brief interjections that coarse clustering drops entirely, and whose absence makes a conversation look like two separate ones.
+- **Contextual padding.** Segment boundaries are extended outward so conversation edges are not clipped. Cutting a sentence off at the boundary loses exactly the content that signals where the interaction began or ended.
+
+## Results
+
+The pipeline on its own reaches roughly **60% precision** on identifying complete and incomplete interactions, with about **49% recall** on single-customer cases.
+
+That recall number is the honest weak point, and it is why this pipeline is one half of a larger system. Voice fingerprinting answers *who is speaking*. It does not reliably answer *where one customer interaction ends and the next begins* — and that question turned out to need an entirely different approach, which became the [event detection pipeline](/projects/event-detection-pipeline).
+
+Combined with event detection and a layer of LLM-based filtering, the full system reaches **89% precision and 73% recall**.
+
+In production the pipeline has processed **over 100,000 hours** of audio, scaling from 2 to 8 clients across **more than 2,000 retail stores** in India.
+
+## What I learned
+
+- **Stage ordering is a design decision, not an implementation detail.** Denoising before VAD rather than after changed downstream quality materially, for no extra compute.
+- **The last 20% was all boundary handling.** Greeting detection, stitching and padding were unglamorous compared to the model work, and contributed more to usable output than any model swap did.
+- **Embedding quality is not uniform, and pretending otherwise costs accuracy.** Treating a noisy three-second embedding as equally reliable as a clean thirty-second one was the single assumption most worth removing.
+- **Knowing what a component cannot do is as valuable as improving it.** Recognising that speaker identity alone could never resolve conversation boundaries is what justified building a second pipeline instead of endlessly tuning this one.

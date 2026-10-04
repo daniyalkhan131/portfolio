@@ -1,0 +1,70 @@
+---
+title: RAG-Based Event Detection Pipeline
+summary: Finding where one customer interaction ends and the next begins, by classifying what happened rather than who was speaking.
+stack: ["Python", "Gemini", "Qwen Embeddings", "RAPTOR", "HyDE", "KNN", "Qdrant"]
+metrics:
+  - label: Customer Coverage
+    value: "+59%"
+  - label: Personal Speech Cut
+    value: "66%"
+  - label: Stores Live
+    value: "2,000+"
+role: AI Research Engineer, Yoyo
+timeframe: "2024 — Present"
+featured: true
+order: 2
+---
+
+## Problem
+
+The [voice fingerprinting pipeline](/projects/voice-fingerprinting-pipeline) answers *who is speaking*. It does not answer *where one customer interaction ends and the next begins* — and in a retail shift those boundaries are the thing you actually need.
+
+Speaker identity is a weak signal for this. The salesperson speaks continuously across the whole shift; their voice does not change when one customer walks away and another arrives. Two consecutive interactions can involve two customers whose embeddings are perfectly distinct and still be merged, or a single customer who steps away mid-conversation and gets split in two.
+
+The insight that reframed the problem: **the boundary is semantic, not acoustic.** What marks the start of a new interaction is not a change in voice but a change in what is being said — a greeting, a fresh product enquiry, a pivot in topic. So instead of asking *who is this*, the pipeline asks *what kind of moment is this*, and reconstructs conversations from the sequence of those moments.
+
+## Approach
+
+### Event-centric framing
+
+The unit of analysis is the **event** — a classified moment in the transcript, such as a greeting, a product enquiry, a price negotiation, or a closing. A conversation is then a coherent sequence of events, and a customer cut is the point where one sequence ends and another begins.
+
+### Retrieval with HyDE
+
+Event identification is built on RAG-style retrieval with **HyDE-based multi-query prompting**.
+
+Plain retrieval embeds the query and searches for nearby documents. That works badly when the query and the target are different *kinds* of text — a question like "is this a product enquiry?" does not sit near an actual product enquiry in embedding space, because questions and statements occupy different regions.
+
+HyDE — Hypothetical Document Embeddings — sidesteps this. Rather than embedding the query, an LLM first generates a *hypothetical* example of what a matching passage would look like, and that synthetic passage is embedded and used for retrieval. The comparison becomes passage-to-passage instead of question-to-passage, which is a far better-posed similarity problem. Running it as multi-query, generating several hypothetical framings, covers the different ways the same kind of moment can actually be phrased on a shop floor.
+
+### Automated event labelling
+
+Hand-labelling an event taxonomy across thousands of stores was never viable, so labelling was automated using historical brand data, LLMs (**Gemini**, with **Qwen** embeddings), and hierarchical clustering inspired by **RAPTOR**.
+
+RAPTOR's idea is recursive abstraction: cluster the text, summarise each cluster with an LLM, then cluster those summaries, and repeat. The result is a tree where leaves are specific utterances and higher nodes are increasingly general themes. For event labelling that structure is exactly right — the tree surfaces the natural granularity of event categories from the data itself, rather than requiring someone to guess the taxonomy up front.
+
+A **KNN classifier** was then trained on that labelled set to categorise new events, chosen deliberately: as new event types emerge in a new brand's data, KNN absorbs them by adding examples rather than by retraining a parametric model.
+
+### Inference and reassembly
+
+At inference the pipeline classifies incoming VAD transcript segments into events, then merges those events back into coherent conversations using two signals:
+
+- **Temporal proximity** — events close in time are likely part of the same interaction.
+- **Key-event sequencing** — real conversations follow recognisable arcs. A greeting opens one; a closing ends one. A second greeting is strong evidence that a new interaction has started, even if the salesperson's voice never changed.
+
+Temporal proximity alone over-merges back-to-back customers. Sequencing alone fragments conversations with long pauses. Together they constrain each other.
+
+## Results
+
+Event detection delivered a **59% improvement in customer coverage** — interactions that voice fingerprinting alone was missing entirely — and a **66% reduction in personal speech**, the colleague chatter and phone calls that are not customer interactions at all.
+
+Combined with voice fingerprinting and a layer of LLM-based filtering, the full system reaches **89% precision and 73% recall**, against roughly 60% and 49% for fingerprinting alone.
+
+The system runs in production across **2,000+ retail stores** for 8 clients, having scaled from an initial 2.
+
+## What I learned
+
+- **When a signal plateaus, question the framing rather than the model.** More tuning on speaker embeddings would not have found conversation boundaries, because the boundary was never acoustic information in the first place.
+- **HyDE is a fix for a mismatch, not a general upgrade.** It helps specifically because questions and passages live in different parts of embedding space. Knowing *why* it works is what tells you when it won't.
+- **Choose the classifier for how it will be maintained.** KNN is not the strongest model available, but onboarding a new brand means adding labelled examples rather than scheduling a retrain — and that operational property mattered more than a marginal accuracy gain.
+- **Two weak, independent signals beat one strong one.** Temporal proximity and event sequencing each fail in opposite directions, which is precisely why combining them worked.

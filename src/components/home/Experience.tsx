@@ -14,6 +14,7 @@ export function Experience() {
                 <span className="font-mono text-xs text-ink-muted">{role.period}</span>
               </div>
               <p className="mt-1 text-sm text-accent">{role.company}</p>
+              <p className="mt-3 text-sm leading-relaxed text-ink-muted">{role.summary}</p>
               <ul className="mt-4 space-y-2">
                 {role.bullets.map((bullet) => (
                   <li

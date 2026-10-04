@@ -5,29 +5,34 @@
  */
 export const skillGroups = [
   {
-    name: "Machine Learning",
-    items: ["Regression", "XGBoost", "Random Forest", "SVM", "K-means", "DBSCAN", "PCA", "t-SNE"],
+    name: "Languages & Frameworks",
+    items: ["Python", "SQL", "PyTorch", "TensorFlow"],
   },
   {
-    name: "Deep Learning",
-    items: ["CNNs", "RNNs", "Transformers", "Transfer Learning", "Autoencoders", "GANs"],
-  },
-  {
-    name: "MLOps",
-    items: ["DVC", "MLflow", "Docker", "FastAPI", "CI/CD", "Kubernetes", "AWS EC2 / S3 / ECR"],
-  },
-  {
-    name: "Data & Statistics",
+    name: "Machine Learning & AI",
     items: [
-      "EDA",
-      "Hypothesis Testing",
-      "Feature Engineering",
-      "Imbalance Handling",
-      "Cross-Validation",
+      "Deep Learning",
+      "NLP",
+      "Computer Vision",
+      "Generative AI",
+      "Classical ML",
+      "Statistical Modeling",
     ],
   },
   {
-    name: "Languages & Tools",
-    items: ["Python", "SQL", "Git", "NumPy", "Pandas", "scikit-learn", "TensorFlow", "PyTorch"],
+    name: "Speech & Audio",
+    items: ["Speaker Diarization", "VAD", "Speaker Embeddings", "Denoising"],
+  },
+  {
+    name: "Experimentation & Tracking",
+    items: ["DVC", "ClearML", "Weights & Biases"],
+  },
+  {
+    name: "MLOps",
+    items: ["Docker", "Kubernetes", "AWS", "CI/CD", "FastAPI", "Flask", "BentoML"],
+  },
+  {
+    name: "Data & Retrieval",
+    items: ["Qdrant", "RAG", "Vector Search", "REST APIs", "Git"],
   },
 ] as const;
