@@ -26,7 +26,7 @@ export default function AboutPage() {
 
         <div className="prose">
           <p>
-            I&apos;m an AI research engineer at a stealth-stage startup in Bengaluru, working on
+            I&apos;m an AI research engineer at YoyoAI in Bengaluru, working on
             speech processing, NLP and generative AI. Most of what I do sits in the gap between a
             model that performs well on a benchmark and a system that keeps performing once real,
             messy data is flowing through it at scale.
