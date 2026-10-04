@@ -10,7 +10,7 @@ export const site = {
     "I turn unstructured speech and text into production systems — speech processing, NLP and generative AI, taken from research prototype to deployed product.",
   email: "daniyalkhan131@gmail.com",
   github: "https://github.com/daniyalkhan131",
-  linkedin: "https://www.linkedin.com/in/daniyal-khan-1389081a5/",
+  linkedin: "https://www.linkedin.com/in/daniyalkhan131",
   resume: "/resume.pdf",
   // Used for absolute URLs in metadata; update once the domain is bought.
   url: "https://daniyalkhan.dev",
