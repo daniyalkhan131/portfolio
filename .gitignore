@@ -26,3 +26,6 @@ yarn-error.log*
 
 # macos
 .DS_Store
+
+# generated LinkedIn posts and video scripts — copy-paste artifacts, not site content
+drafts/
